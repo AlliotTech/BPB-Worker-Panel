@@ -40,6 +40,9 @@ async function processHtmlPages() {
         let html = indexHtml.replace(/<title>.*?<\/title>/i, `<title>${randomString(10)}</title>`);
         // 2. 替换项目名等特征性字符串
         html = html.replace(/BPB-Worker-Panel/gi, randomString(12));
+        html = html.replace(/BPB Panel/gi, randomString(10));
+        html = html.replace(/v__PANEL_VERSION__/gi, randomString(6));
+        html = html.replace(/v\d+\.\d+\.\d+/gi, randomString(6));
         // 3. 移除注释
         html = html.replace(/<!--[\s\S]*?-->/g, '');
         // 4. 移除或随机化 meta
