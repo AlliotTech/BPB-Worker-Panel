@@ -1,4 +1,4 @@
-import { getConfigAddresses, generateRemark, randomUpperCase, getRandomPath, base64EncodeUnicode } from './helpers';
+import { getConfigAddresses, generateRemark, getRegionByAddress, randomUpperCase, getRandomPath, base64EncodeUnicode } from './helpers';
 
 export async function getNormalConfigs(isFragment) {
     const settings = globalThis.settings;
@@ -49,15 +49,16 @@ export async function getNormalConfigs(isFragment) {
         return config.href;
     }
 
-    settings.ports.forEach(port => {
-        Addresses.forEach(addr => {
+    for (const port of settings.ports) {
+        for (const addr of Addresses) {
             const isCustomAddr = settings.customCdnAddrs.includes(addr) && !isFragment;
             const configType = isCustomAddr ? 'C' : isFragment ? 'F' : '';
             const sni = isCustomAddr ? settings.customCdnSni : randomUpperCase(globalThis.hostName);
             const host = isCustomAddr ? settings.customCdnHost : globalThis.hostName;
-
-            const VLRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, 'VLESS', configType);
-            const TRRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, 'Trojan', configType);
+            // 新增：获取地区
+            const region = await getRegionByAddress(addr);
+            const VLRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, 'VLESS', configType, region);
+            const TRRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, 'Trojan', configType, region);
 
             if (settings.VLConfigs) {
                 const vlessConfig = buildConfig('vless', addr, port, host, sni, VLRemark);
@@ -70,8 +71,8 @@ export async function getNormalConfigs(isFragment) {
             }
 
             proxyIndex++;
-        });
-    });
+        }
+    }
 
     if (settings.outProxy) {
         let chainRemark = `#${encodeURIComponent('💦 Chain proxy 🔗')}`;

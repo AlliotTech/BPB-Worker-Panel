@@ -56,15 +56,46 @@ export function extractWireguardParams(warpConfigs, isWoW) {
     };
 }
 
-export function generateRemark(index, port, address, cleanIPs, protocol, configType) {
+
+/**
+ * 获取地区名，优先主API(ip-api.com)，失败时用备用API(ipwho.is)
+ * @param {string} address
+ * @returns {Promise<string>} 地区名
+ */
+export async function getRegionByAddress(address) {
+    // 只查IP
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(address)) {
+        // 主API
+        try {
+            const resp = await fetch(`https://ip-api.com/json/${address}?fields=country,regionName,city,status`);
+            const data = await resp.json();
+            if (data.status === 'success') {
+                return data.city || data.regionName || data.country || '未知';
+            }
+        } catch {}
+        // 备用API
+        try {
+            const resp = await fetch(`https://ipwho.is/${address}`);
+            const data = await resp.json();
+            if (data.success) {
+                return data.city || data.region || data.country || '未知';
+            }
+        } catch {}
+    }
+    // 域名或未知
+    return '未知';
+}
+
+/**
+ * 生成代理remark，格式：地区-index-protocol-addressType:port
+ */
+export function generateRemark(index, port, address, cleanIPs, protocol, configType, region = '未知') {
     let addressType;
     const type = configType ? ` ${configType}` : '';
-
     cleanIPs.includes(address)
         ? addressType = 'Clean IP'
         : addressType = isDomain(address) ? 'Domain' : isIPv4(address) ? 'IPv4' : isIPv6(address) ? 'IPv6' : '';
-
-    return `💦 ${index} - ${protocol}${type} - ${addressType} : ${port}`;
+    return `${region}-${index}-${protocol}${type}-${addressType}:${port}`;
 }
 
 export function randomUpperCase(str) {
